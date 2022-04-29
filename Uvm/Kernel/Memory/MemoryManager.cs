@@ -7,7 +7,13 @@ namespace Uvm.Kernel.Memory
     internal class MemoryManager : IDisposable
     {
         //只需保存内存表即可，具体byte[]通过指针引用到实际内存
-        private readonly ConcurrentDictionary<IntPtr, MemoryStruct.MemoryBlock> MemoryBlocks = new();
+        private readonly ConcurrentDictionary<IntPtr, MemoryStruct.MemoryBlock> MemoryBlocks;
+        private bool disposed = false;
+        public MemoryManager()
+        {
+            MemoryBlocks = new();
+        }
+        
         [Ring(Access.Ring0)]
         public IntPtr Allocate(int size,int offset, MemoryStruct.MemoryType type, Access access, out Span<byte> bytes)
         {
@@ -59,11 +65,28 @@ namespace Uvm.Kernel.Memory
         [Ring(Access.Ring0)]
         public void Dispose()
         {
-            foreach(KeyValuePair<IntPtr,MemoryStruct.MemoryBlock> memoryBlock in MemoryBlocks)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        [Ring(Access.Ring0)]
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
             {
-                Release(memoryBlock.Key);
+                if (disposing)
+                {
+                    //manager object
+                }
+                foreach (KeyValuePair<IntPtr, MemoryStruct.MemoryBlock> memoryBlock in MemoryBlocks)
+                {
+                    Release(memoryBlock.Key);
+                }
+                disposed = true;
             }
-            GC.Collect();
+        }
+        ~MemoryManager()
+        {
+            Dispose(false);
         }
     }
 }
