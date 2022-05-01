@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace Uvm.Kernel.Registers
 {
-    internal interface IRegister<T>
-    {
-        public void Push(T obj);
-        public T Pop();
+    internal abstract class RegisterBase<T> : Stack<T>
+    {      
     }
 }
